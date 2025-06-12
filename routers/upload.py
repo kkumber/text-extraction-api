@@ -1,6 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List, Dict, Any
+import os
+
 import magic
+
 
 from services.pdf_extractor import extract_text_from_pdf
 from services.docx_extractor import extract_text_from_docx
