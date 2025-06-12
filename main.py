@@ -11,6 +11,16 @@ app = FastAPI()
 
 @app.post("/upload-document/")
 async def upload_document(file: list[UploadFile] = File(...)):
+
+    # Check if empty upload
+    if not file:
+        raise HTTPException(400, "No files provided")
+
+    MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB       
+
+    if len(file) > 10:
+        raise HTTPException(400, "Too many files")
+
     # Result Dictinoary
     result = {
         'results': [],
@@ -28,11 +38,16 @@ async def upload_document(file: list[UploadFile] = File(...)):
     }
     
     for i, uploadedFile in enumerate(file):
+        # Check if uploaded file exceeds max file size
+        if uploadedFile.size > MAX_FILE_SIZE:
+            raise HTTPException(400, f"File {uploadedFile.filename} too large")
+
+
         content = await uploadedFile.read()
         mime_type = magic.from_buffer(content, mime=True)
         currentProcessingFile = result['results']
         
-
+        # Check if file type is not allowed
         if mime_type not in allowed_docs:
             raise HTTPException(
                 status_code=400,
@@ -49,12 +64,14 @@ async def upload_document(file: list[UploadFile] = File(...)):
                 'extractedText': extractedText 
             })
 
-        except:
-            raise HTTPException(
-                status_code=400,
-                detail='Something went wrong'
-            )
-         
+        except Exception as e:
+            currentProcessingFile.append({
+                'filename': uploadedFile.filename,
+                'mime_type': mime_type,
+                'status': 'error',
+                'error': str(e)
+            })
+                
     return result
 
 # Extract text in pdf file using pymupdf
@@ -62,19 +79,22 @@ def extract_text_from_pdf(file):
     doc = pymupdf.open(stream=file, filetype='pdf')
     fullText = []
 
-    for page in doc:
-        # Get texts
-        fullText.append(page.get_text())
+    try:
+        for page in doc:
+            # Get texts
+            fullText.append(page.get_text())
 
-        # Process all images on the page at once
-        image_list = page.get_images()
-        for img in image_list:
-            xref = img[0]
-            img_data = doc.extract_image(xref)
-            img_bytes = img_data["image"]
-            fullText.append(extract_text_from_image(img_bytes))
+            # Process all images on the page at once
+            image_list = page.get_images()
+            for img in image_list:
+                xref = img[0]
+                img_data = doc.extract_image(xref)
+                img_bytes = img_data["image"]
+                fullText.append(extract_text_from_image(img_bytes))
 
-    return fullText
+        return fullText
+    finally:
+        doc.close()
 
 # Extract text in docx file using python-docx
 def extract_text_from_docx(file):
@@ -97,8 +117,11 @@ def extract_text_from_image(img_bytes):
     # config for ocr engine and psm
     ocrConfig = r'--psm 6 --oem 3'
     image = PIL.Image.open(io.BytesIO(img_bytes))
-    output = ocr.image_to_string(image, config=ocrConfig)
-    return output
+    try:
+        output = ocr.image_to_string(image, config=ocrConfig)
+        return output
+    finally:
+        image.close()
 
 # Extract text in pptx file using python-pptx
 def extract_text_from_pptx(file):
