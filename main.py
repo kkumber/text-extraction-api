@@ -5,6 +5,7 @@ import docx
 import pytesseract as ocr
 import PIL
 import io
+import pptx
 
 app = FastAPI()
 
@@ -77,13 +78,28 @@ def extract_text_from_image(img_bytes):
     output = ocr.image_to_string(image, config=ocrConfig)
     return output
 
+# Extract text in docx file using python-pptx
+def extract_text_from_pptx(file):
+    ppt = pptx.Presentation(io.BytesIO(file))
+    fullText = []
+    
+    for slide in ppt.slides:
+        for shape in slide.shapes:
+            if hasattr(shape, 'text'):
+                fullText.append(shape.text)
+            elif shape.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.PICTURE:
+                # Get the image binary data
+                image = shape.image
+                image_bytes = image.blob  # the raw image data
+                fullText.append(extract_text_from_image(image_bytes))
+            elif shape.has_table:
+                for row in shape.table.rows:
+                    for cell in row.cells:
+                        fullText.append(cell.text)
+    
+    return '\n'.join(fullText)
+
 # Extract text in docx file using idk yet
 def extract_text_from_video(file):
-    #extraction logic
+    
     pass
-
-# Extract text in docx file using idk yet
-def extract_text_from_pptx(file):
-    #extraction logic
-    pass
-
