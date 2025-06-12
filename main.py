@@ -11,20 +11,13 @@ app = FastAPI()
 
 @app.post("/upload-document/")
 async def upload_document(file: list[UploadFile] = File(...)):
-    
     # Result Dictinoary
     result = {
-        'results':
-            [{
-                'filename': '',
-                'mime_type': '',
-                'status': 'success',
-                'extractedText': [] 
-            }],
+        'results': [],
         'total_files': len(file),
     }
     
-    # Dicrionary parsers
+    # Dictionary parsers
     allowed_docs = {
         'application/pdf': extract_text_from_pdf,
         'application/msword': extract_text_from_docx,
@@ -37,7 +30,7 @@ async def upload_document(file: list[UploadFile] = File(...)):
     for i, uploadedFile in enumerate(file):
         content = await uploadedFile.read()
         mime_type = magic.from_buffer(content, mime=True)
-        currentProcessingFile = result['results'][i]
+        currentProcessingFile = result['results']
         
 
         if mime_type not in allowed_docs:
@@ -48,8 +41,14 @@ async def upload_document(file: list[UploadFile] = File(...)):
         
         try:
             extractedText = allowed_docs[mime_type](content)
-            currentProcessingFile['filename'] = uploadedFile.filename
-            currentProcessingFile['extractedText'] = extractedText
+            currentProcessingFile.append(
+            {
+                'filename': uploadedFile.filename,
+                'mime_type': mime_type,
+                'status': 'success',
+                'extractedText': extractedText 
+            })
+
         except:
             raise HTTPException(
                 status_code=400,
@@ -64,6 +63,9 @@ def extract_text_from_pdf(file):
     fullText = []
 
     for page in doc:
+        # Get texts
+        fullText.append(page.get_text())
+
         # Process all images on the page at once
         image_list = page.get_images()
         for img in image_list:
@@ -71,7 +73,7 @@ def extract_text_from_pdf(file):
             img_data = doc.extract_image(xref)
             img_bytes = img_data["image"]
             fullText.append(extract_text_from_image(img_bytes))
-        fullText.append(page.get_text())
+
     return fullText
 
 # Extract text in docx file using python-docx
@@ -79,9 +81,11 @@ def extract_text_from_docx(file):
     doc = docx.Document(io.BytesIO(file))
     fullText = []
 
+    # Get texts on each paragraph block
     for para in doc.paragraphs:
         fullText.append(para.text)
-        
+
+    # Get image    
     for image in doc.part.related_parts.values():
         if image.content_type.startswith("image/"):
             fullText.append(extract_text_from_image(image.blob))
@@ -103,13 +107,15 @@ def extract_text_from_pptx(file):
     
     for slide in ppt.slides:
         for shape in slide.shapes:
+            # Extract texts
             if hasattr(shape, 'text'):
                 fullText.append(shape.text)
+            # Extract images
             elif shape.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.PICTURE:
-                # Get the image binary data
                 image = shape.image
                 image_bytes = image.blob  # the raw image data
                 fullText.append(extract_text_from_image(image_bytes))
+            # Extract Tables
             elif shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:
