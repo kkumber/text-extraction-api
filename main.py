@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, BaseModel
 import magic
 import pymupdf
 import docx
@@ -9,38 +9,56 @@ import pptx
 
 app = FastAPI()
 
-
 @app.post("/upload-document/")
 async def upload_document(file: list[UploadFile] = File(...)):
-    extractedText = []
     
-    allowed_docs = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'image/jpeg',
-        'image/png'
-    ]
+    # Result Dictinoary
+    result = {
+        'results':
+            [{
+                'filename': '',
+                'mime_type': '',
+                'status': 'success',
+                'extractedText': [] 
+            }],
+        'total_files': len(file),
+    }
     
-    for uploadedFile in file:
+    # Dicrionary parsers
+    allowed_docs = {
+        'application/pdf': extract_text_from_pdf,
+        'application/msword': extract_text_from_docx,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': extract_text_from_docx,
+        'image/jpeg': extract_text_from_image,
+        'image/png': extract_text_from_image,
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': extract_text_from_pptx
+    }
+    
+    for i, uploadedFile in enumerate(file):
         content = await uploadedFile.read()
         mime_type = magic.from_buffer(content, mime=True)
+        currentProcessingFile = result['results'][i]
+        
 
         if mime_type not in allowed_docs:
             raise HTTPException(
                 status_code=400,
                 detail=f"Document type not allowed. Received: {mime_type}"
             )
-            
-        if (mime_type == allowed_docs[0]):
-            extractedText.append(extract_text_from_pdf(content))
+        
+        try:
+            extractedText = allowed_docs[mime_type](content)
+            currentProcessingFile['filename'] = uploadedFile.filename
+            currentProcessingFile['extractedText'] = extractedText
+        except:
+            raise HTTPException(
+                status_code=400,
+                detail='Something went wrong'
+            )
+         
+    return result
 
-    return {
-        "extracted_text": '.'.join(extractedText)
-    }
-
-# Extract text in docx file using pymupdf
+# Extract text in pdf file using pymupdf
 def extract_text_from_pdf(file):
     doc = pymupdf.open(stream=file, filetype='pdf')
     fullText = []
@@ -54,7 +72,7 @@ def extract_text_from_pdf(file):
             img_bytes = img_data["image"]
             fullText.append(extract_text_from_image(img_bytes))
         fullText.append(page.get_text())
-    return '\n'.join(fullText)
+    return fullText
 
 # Extract text in docx file using python-docx
 def extract_text_from_docx(file):
@@ -68,9 +86,9 @@ def extract_text_from_docx(file):
         if image.content_type.startswith("image/"):
             fullText.append(extract_text_from_image(image.blob))
             
-    return '\n'.join(fullText)
+    return fullText
 
-# Extract text in docx file using pytesseract
+# Extract text in image file using pytesseract
 def extract_text_from_image(img_bytes):
     # config for ocr engine and psm
     ocrConfig = r'--psm 6 --oem 3'
@@ -78,7 +96,7 @@ def extract_text_from_image(img_bytes):
     output = ocr.image_to_string(image, config=ocrConfig)
     return output
 
-# Extract text in docx file using python-pptx
+# Extract text in pptx file using python-pptx
 def extract_text_from_pptx(file):
     ppt = pptx.Presentation(io.BytesIO(file))
     fullText = []
@@ -97,9 +115,4 @@ def extract_text_from_pptx(file):
                     for cell in row.cells:
                         fullText.append(cell.text)
     
-    return '\n'.join(fullText)
-
-# Extract text in docx file using idk yet
-def extract_text_from_video(file):
-    
-    pass
+    return fullText
