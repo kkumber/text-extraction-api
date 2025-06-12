@@ -62,7 +62,12 @@ def extract_text_from_docx(file):
 
     for para in doc.paragraphs:
         fullText.append(para.text)
-    print('\n'.join(fullText))
+        
+    for image in doc.part.related_parts.values():
+        if image.content_type.startswith("image/"):
+            fullText.append(extract_text_from_image(image.blob))
+            
+    return '\n'.join(fullText)
 
 # Extract text in docx file using pytesseract
 def extract_text_from_image(img_bytes):
