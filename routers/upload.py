@@ -38,7 +38,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
         if uploadedFile.size and uploadedFile.size > MAX_FILE_SIZE:
             current_file.append({
                 'filename': uploadedFile.filename,
-                'file_size': uploadedFile.size,
+                'file_size': f"{uploadedFile.size} bytes",
                 'status': 'error',
                 'error': f'File too large: {uploadedFile.size:,} bytes (max: {MAX_FILE_SIZE:,})'
             })
@@ -54,7 +54,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
                 current_file.append({
                     'filename': uploadedFile.filename,
                     'mime_type': mime_type,
-                    'file_size': uploadedFile.size,
+                    'file_size': f"{uploadedFile.size} bytes",
                     'status': 'error',
                     'error': f'Document type not allowed: {mime_type}'
                 })
@@ -66,7 +66,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type,
-                'file_size': uploadedFile.size,
+                'file_size': f"{uploadedFile.size} bytes",
                 'status': 'success',
                 'extracted_texts': extractedText,
                 'full_text': clean_extracted_text('\n'.join(extractedText))
@@ -78,6 +78,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type or 'unknown',
+                'file_size': f"{uploadedFile.size} bytes",
                 'status': 'error',
                 'error': str(e)
             })
