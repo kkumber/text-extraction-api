@@ -7,6 +7,7 @@ from services.docx_extractor import extract_text_from_docx
 from services.pptx_extractor import extract_text_from_pptx
 from services.image_ocr import extract_text_from_image
 from services.clean_extracted_text import clean_extracted_text
+from services.chunk_text_by_words import chunk_text_by_words
 
 from utils.mime_types import allowed_docs
 from utils.count_words import count_words
@@ -66,14 +67,17 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             
             # Process the file
             extractedText = allowed_docs[mime_type](content)
-            fullText = extractedText if len(extractedText) <= 1 else clean_extracted_text('\n'.join(extractedText))
-            word_count = count_words(fullText)
+            cleanText = extractedText[0] if len(extractedText) == 1 else clean_extracted_text('\n'.join(extractedText))
+            word_count = count_words(cleanText)
+
+            chunks = chunk_text_by_words(cleanText)
+
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type,
                 'file_size': f"{uploadedFile.size} bytes",
                 'status': 'success',
-                'full_text': fullText,
+                'extracted_texts': chunks,
                 'word_count': word_count
             })
             result['successful_files'] += 1 # Add as success
