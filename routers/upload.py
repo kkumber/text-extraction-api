@@ -2,14 +2,13 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List, Dict, Any
 import os
 
-import magic
-
-
 from services.pdf_extractor import extract_text_from_pdf
 from services.docx_extractor import extract_text_from_docx
 from services.pptx_extractor import extract_text_from_pptx
 from services.image_ocr import extract_text_from_image
 from utils.mime_types import allowed_docs
+from services.get_mime_type import get_mime_type
+from services.clean_extracted_text import clean_extracted_text
 
 router = APIRouter()
 
@@ -39,6 +38,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
         if uploadedFile.size and uploadedFile.size > MAX_FILE_SIZE:
             current_file.append({
                 'filename': uploadedFile.filename,
+                'file_size': uploadedFile.size,
                 'status': 'error',
                 'error': f'File too large: {uploadedFile.size:,} bytes (max: {MAX_FILE_SIZE:,})'
             })
@@ -47,13 +47,14 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
 
         try:
             content = await uploadedFile.read()
-            mime_type = magic.from_buffer(content, mime=True)
+            mime_type = get_mime_type(content)
             
             # Check if file type is allowed
             if mime_type not in allowed_docs:
                 current_file.append({
                     'filename': uploadedFile.filename,
                     'mime_type': mime_type,
+                    'file_size': uploadedFile.size,
                     'status': 'error',
                     'error': f'Document type not allowed: {mime_type}'
                 })
@@ -65,10 +66,13 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type,
+                'file_size': uploadedFile.size,
                 'status': 'success',
-                'extractedText': extractedText
+                'extracted_texts': extractedText,
+                'full_text': clean_extracted_text('\n'.join(extractedText))
             })
             result['successful_files'] += 1 # Add as success
+            continue
 
         except Exception as e:
             current_file.append({
@@ -78,4 +82,5 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
                 'error': str(e)
             })
         result['failed_files'] += 1 # Add as a failure
+        continue
     return result
