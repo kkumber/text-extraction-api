@@ -63,13 +63,14 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             
             # Process the file
             extractedText = allowed_docs[mime_type](content)
+            fullText = extractedText if len(extractedText) > 0 else clean_extracted_text('\n'.join(extractedText))
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type,
                 'file_size': f"{uploadedFile.size} bytes",
                 'status': 'success',
                 'extracted_texts': extractedText,
-                'full_text': clean_extracted_text('\n'.join(extractedText))
+                'full_text': fullText
             })
             result['successful_files'] += 1 # Add as success
             continue
