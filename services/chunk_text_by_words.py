@@ -1,9 +1,9 @@
 import re
 
-def chunk_text_by_words(text):
+def chunk_text_by_words(text: str) -> list:
     """Split text into chunks of specified word limit"""
     word_limit = 1000
-    words = re.findall(r'\b\w+\b', text)
+    words = text.split()
     chunks = []
     result = []
     

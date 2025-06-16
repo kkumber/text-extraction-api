@@ -68,8 +68,8 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             # Process the file
             extractedText = allowed_docs[mime_type](content)
             cleanText = extractedText[0] if len(extractedText) == 1 else clean_extracted_text('\n'.join(extractedText))
-            word_count = count_words(cleanText)
 
+            # Seperate extracted texts into chunks
             chunks = chunk_text_by_words(cleanText)
 
             current_file.append({
@@ -77,8 +77,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
                 'mime_type': mime_type,
                 'file_size': f"{uploadedFile.size} bytes",
                 'status': 'success',
-                'extracted_texts': chunks,
-                'word_count': word_count
+                'extracted_texts': cleanText,
             })
             result['successful_files'] += 1 # Add as success
             continue
