@@ -77,7 +77,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
                 'mime_type': mime_type,
                 'file_size': f"{uploadedFile.size} bytes",
                 'status': 'success',
-                'extracted_texts': cleanText,
+                'extracted_texts': chunks,
             })
             result['successful_files'] += 1 # Add as success
             continue
