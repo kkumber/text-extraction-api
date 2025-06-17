@@ -17,7 +17,7 @@ def chunk_text_by_words(text: str) -> list:
 
     for index, chunk in enumerate(chunks, start=1):
         result.append({
-            'page': index,
+            'chunk_id': index,
             'chunk': chunk
         })
     
