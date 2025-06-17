@@ -12,6 +12,7 @@ from services.chunk_text_by_words import chunk_text_by_words
 from utils.mime_types import allowed_docs
 from utils.count_words import count_words
 from utils.get_mime_type import get_mime_type
+from utils.bytes_to_MB import bytes_to_MB
 
 
 router = APIRouter()
@@ -38,13 +39,14 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
     
     current_file = result['results']
     for uploadedFile in file:
+        file_size = bytes_to_MB(uploadedFile.size)
         # Check file size before reading
         if uploadedFile.size and uploadedFile.size > MAX_FILE_SIZE:
             current_file.append({
                 'filename': uploadedFile.filename,
-                'file_size': f"{uploadedFile.size} bytes",
+                'file_size': f"{file_size} MB",
                 'status': 'error',
-                'error': f'File too large: {uploadedFile.size:,} bytes (max: {MAX_FILE_SIZE:,})'
+                'error': f'File too large: {file_size:,} MB (max: {MAX_FILE_SIZE:,})'
             })
             result['failed_files'] += 1 # Add as a failure
             continue
@@ -58,7 +60,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
                 current_file.append({
                     'filename': uploadedFile.filename,
                     'mime_type': mime_type,
-                    'file_size': f"{uploadedFile.size} bytes",
+                    'file_size': f"{file_size} MB",
                     'status': 'error',
                     'error': f'Document type not allowed: {mime_type}'
                 })
@@ -75,7 +77,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type,
-                'file_size': f"{uploadedFile.size} bytes",
+                'file_size': f"{file_size} MB",
                 'status': 'success',
                 'extracted_texts': chunks,
             })
@@ -86,7 +88,7 @@ async def upload_document(file: List[UploadFile] = File(...)) -> Dict[str, Any]:
             current_file.append({
                 'filename': uploadedFile.filename,
                 'mime_type': mime_type or 'unknown',
-                'file_size': f"{uploadedFile.size} bytes",
+                'file_size': f"{file_size} MB",
                 'status': 'error',
                 'error': str(e)
             })
