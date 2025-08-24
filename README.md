@@ -4,7 +4,7 @@ This is a lightweight microservice for extracting text from files using specific
 
 ## Features
 
-- Extract text from PDF, DOCX, PPTX, IMAGE FORMAT
+- Extract text from **PDF, DOCX, PPTX, and images (JPG, PNG, etc.)**
 - REST API for integration
 - Lightweight and fast
 
@@ -27,9 +27,9 @@ Create a virtual environment:
 python -m venv .venv
 ```
 
-<i>Note: If python doesn’t work, try 'py' (Windows) or 'python3' (Linux/macOS).</i>
+> Note: If python doesn’t work, try 'py' (Windows) or 'python3' (Linux/macOS).
 
-Activate virtual environment:
+**Activate virtual environment** <br/>
 On Windows:
 
 ```bash
@@ -42,7 +42,7 @@ On macOS/Linux:
 source .venv/bin/activate
 ```
 
-<i>Note: It's recommended to use a virtual environment to install all dependencies to avoid conflicts with your other projects</i>
+> Note: It's recommended to use a virtual environment to install all dependencies to avoid conflicts with your other projects
 
 Install all dependencies:
 
