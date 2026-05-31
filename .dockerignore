@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+pyvenv.cfg
+
+# Python caching and bytecode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and secrets (Do NOT bake these into images!)
+.env
+.env.*
+!.env.example
+secrets.toml
+
+# Docker / Deployment build artifacts
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker-compose.yml
+.render/
+
+# IDEs and Editors configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation and project notes
+README.md
+docs/
+architecture.md
