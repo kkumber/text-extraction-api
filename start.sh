@@ -7,4 +7,4 @@ set -e
 echo "Starting FastAPI Microservice..."
 
 # Execute Uvicorn, replacing the shell script process with the server process
-exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-9000}" --workers 2
+exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-10000}" --workers 2
